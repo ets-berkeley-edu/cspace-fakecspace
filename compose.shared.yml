@@ -11,8 +11,8 @@ name: fakecspace-shared
 services:
   fakecspace:
     build: .
-    # Published on 127.0.0.1 only (the accounts' passwords are public), on a port neither app's own simulator uses.
-    ports: ["127.0.0.1:${FAKECSPACE_SHARED_PORT:-8480}:8180"]
+    # Published on 127.0.0.1 only (the accounts' passwords are public), on a port none of the apps' stacks use.
+    ports: ["127.0.0.1:${FAKECSPACE_SHARED_PORT:-8680}:8180"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8180/_fake/settings')"]
       interval: 2s

@@ -3,7 +3,7 @@
 ## Unreleased
 
 - `compose.shared.yml`: one simulator on the Docker network `fakecspace-shared` for both apps' shared mode (F6,
-  F7), at http://localhost:8480. No change to the package.
+  F7), at http://localhost:8680. No change to the package.
 
 ## 0.2.0
 

@@ -82,7 +82,7 @@ To run it: `uvicorn fakecspace.app:app --port 8180`, or
 Each app normally runs its own simulator. To see a file the BMU uploads come out of Serena, both can use one:
 `./serena up shared` and `./bmu up shared` each start `compose.shared.yml` from a clone of this repository beside
 theirs (or `FAKECSPACE_DIR`), unless it is already running. It joins the Docker network `fakecspace-shared`, where each
-museum has its host name (`pahma.fakecspace:8180`), and is published at http://localhost:8480. It runs this clone's
+museum has its host name (`pahma.fakecspace:8180`), and is published at http://localhost:8680. It runs this clone's
 checkout, so check out the tag the apps pin when that matters. It is for local use only.
 
 ```bash
