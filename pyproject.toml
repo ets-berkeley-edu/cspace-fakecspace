@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fakecspace"
+dynamic = ["version"]
+description = "A small simulated CollectionSpace services API, for developing and testing UC Berkeley's CollectionSpace apps. Not CollectionSpace; never use it with real data."
+readme = "README.md"
+license = "LicenseRef-UC-Regents"  # educational, research and not-for-profit use; see LICENSE
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "UC Berkeley Research, Teaching, and Learning" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing :: Mocking",
+]
+# What the code needs, with minimum versions. Installs use the hash-pinned requirements files instead
+# (pin-requirements.sh).
+dependencies = [
+    "fastapi>=0.120",
+    "python-multipart>=0.0.20",
+    "defusedxml>=0.7",
+]
+
+[project.optional-dependencies]
+# To run it as a server: uvicorn fakecspace.app:app --port 8180
+server = ["uvicorn[standard]>=0.30"]
+# Records with a size band (POST /_fake/media {"band": ...}) get JPEGs made with libvips.
+bands = ["pyvips[binary]>=3.0"]
+dev = [
+    "uvicorn[standard]>=0.30",
+    "pyvips[binary]>=3.0",
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.14",
+    "mypy>=1.11",
+    "build>=1.2",
+]
+
+[project.urls]
+Source = "https://github.com/ets-berkeley-edu/cspace-fakecspace"
+
+[tool.setuptools.dynamic]
+version = { attr = "fakecspace.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+ignore = ["S101"]  # assert in tests
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]  # the simulator's synthetic passwords
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src", "tests"]
+strict = false
+disallow_untyped_defs = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

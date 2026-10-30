@@ -1,0 +1,60 @@
+name: Publish
+# Publishes the package with PyPI's trusted publishing (OIDC): no API token is stored anywhere.
+#   - Run by hand (Actions > Publish > Run workflow): builds from the chosen branch and publishes to TestPyPI, the
+#     dry run. TestPyPI refuses a version it already has, so bump the version for another dry run.
+#   - A tag vX.Y.Z pushed: builds that commit and publishes to PyPI, after a required reviewer approves the `pypi`
+#     environment. The tag must match fakecspace.__version__.
+# Each target's trusted publisher names this file (publish.yml) and its environment (testpypi, pypi); renaming either
+# breaks publishing until the publisher is changed on (Test)PyPI too.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with: { python-version-file: .python-version }
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip install --no-deps --no-build-isolation -e .
+      - run: pytest -q
+      - name: A tag matches the package's version
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(python -c 'import fakecspace; print(fakecspace.__version__)')
+          [ "$TAG" = "v$version" ] || { echo "::error::Tag $TAG doesn't match version $version"; exit 1; }
+      - run: python -m build --no-isolation
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: dist, path: dist/, if-no-files-found: error }
+
+  testpypi:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: testpypi, url: "https://test.pypi.org/p/fakecspace" }
+    permissions:
+      id-token: write  # trusted publishing
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@aef6c9b6e301dc803e1bc9133e9ce67ae9b0906b # v1.14.3
+        with: { repository-url: "https://test.pypi.org/legacy/" }
+
+  pypi:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: pypi, url: "https://pypi.org/p/fakecspace" }
+    permissions:
+      id-token: write  # trusted publishing
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@aef6c9b6e301dc803e1bc9133e9ce67ae9b0906b # v1.14.3

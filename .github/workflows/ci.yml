@@ -1,0 +1,54 @@
+name: CI
+on:
+  # Pushes to main only; a PR branch is covered by its pull_request run.
+  push:
+    branches: [main]
+  pull_request:
+# The workflow's token can only read the repository: no job here writes to GitHub.
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with: { python-version-file: .python-version }
+      # Only the pinned versions, checked against their hashes (see pin-requirements.sh).
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip install --no-deps --no-build-isolation -e .
+      - run: ruff check .
+      - run: mypy
+      - run: pytest -q
+      - name: The package builds, and the wheel holds only the package
+        run: |
+          python -m build --no-isolation
+          python - <<'PY'
+          import glob, zipfile
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          stray = [n for n in names if not n.startswith(("fakecspace/", "fakecspace-"))]
+          assert not stray, f"unexpected files in the wheel: {stray}"
+          PY
+
+  dependencies:
+    # Security: always runs (pip-audit, and the hash-pinned requirements files in step).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with: { python-version-file: .python-version }
+      - run: pip install --require-hashes -r requirements-tools.txt
+      - name: The requirements files match pyproject.toml and requirements-tools.in
+        run: |
+          ./pin-requirements.sh
+          git diff --exit-code -- requirements.txt requirements-dev.txt requirements-tools.txt || {
+            echo "::error::The requirements files are out of step. Run ./pin-requirements.sh and commit the result."
+            exit 1
+          }
+      - name: No known vulnerabilities in the pinned packages
+        run: |
+          # Two runs: the tools file pins click differently, and pip-audit refuses a package pinned twice.
+          pip-audit --require-hashes --disable-pip -r requirements.txt -r requirements-dev.txt
+          pip-audit --require-hashes --disable-pip -r requirements-tools.txt
