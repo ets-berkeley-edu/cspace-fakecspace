@@ -29,6 +29,17 @@ STEPS = frozenset({"media", "upload", "objectSearch", "objectCreate", "relation"
 FileMap = dict[str, tuple[bytes | None, str]]
 
 
+ACCESS = ("public", "restricted")
+
+
+def kind_of(content_type: str) -> str:
+    """A servable list's kind for an uploaded file's type: pdf, audio, video, 3D (model/...) or image."""
+    major = content_type.split("/")[0].lower()
+    if content_type.lower() == "application/pdf":
+        return "pdf"
+    return {"audio": "audio", "video": "video", "model": "3D"}.get(major, "image")
+
+
 def now() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -54,6 +65,8 @@ class Media:
     # Its files and Blob CSID before its first replace, for /_fake/restore; None if never replaced.
     before_replace: tuple[FileMap, str | None] | None = None
     band: str | None = None  # the size band of its files, or None for the 8x8 samples
+    kind: str = "image"  # what a servable list calls it: image, card, pdf, 3D, audio or video
+    access: str = "public"  # public or restricted, as a servable list gives it (CineFiles' restricted PDFs)
 
     # --- dict-style access, by CollectionSpace's field names
     def _get(self, key: str) -> Any:
@@ -168,7 +181,8 @@ class Store:
 
     # --- Serena's style of adding records
     def add(self, csid: str, kind: str = "image", state: str = "project", shade: int = 128,
-            blob: str | None = None, identification_number: str | None = None, band: str | None = None) -> Media:
+            blob: str | None = None, identification_number: str | None = None, band: str | None = None,
+            access: str = "public") -> Media:
         """A Media record with sample files (an 8x8 PNG, a one-page PDF or a one-box X3D scene), or with files of
         about a real one's size for a size band (images only)."""
         files: FileMap
@@ -186,10 +200,13 @@ class Store:
             files = {"content": (samples.x3d(), "model/x3d+xml")}
         else:
             raise ValueError(f"unknown kind {kind}")
+        if access not in ACCESS:
+            raise ValueError(f"unknown access {access}: public or restricted")
         with self.lock:
             # A synthetic identification number unless one is given: 2026.1.1, 2026.1.2, ...
             number = identification_number if identification_number is not None else f"2026.1.{len(self.media) + 1}"
-            media = Media(csid, state, files, blob, identification_number=number, band=band)
+            media = Media(csid, state, files, blob, identification_number=number, band=band, kind=kind,
+                          access=access)
             self.media[csid] = media
         return media
 

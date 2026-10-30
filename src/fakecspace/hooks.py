@@ -3,8 +3,9 @@ or path prefix, as for CollectionSpace's endpoints), except /_fake/reset, which 
 
   POST   /_fake/reset              every museum's store empty, failures and slowness cleared
   POST   /_fake/seed               {"set": "bmu"}: add a sample set (seeds.py) to this museum's store
-  GET    /_fake/media              this museum's Media records, one line each (for a mock ETL's servable list)
-  POST   /_fake/media              {"csid", "kind": image|pdf|3D, "state"?, "blob"?, "identification"?, "band"?}: a
+  GET    /_fake/media              this museum's Media records with their kind and access (for a servable list)
+  POST   /_fake/media              {"csid", "kind": image|card|pdf|3D, "state"?, "blob"?, "identification"?, "band"?,
+                                   "access"?: public|restricted, "museum"?: whose store (else the request's)}: a
                                    Media record with sample files (a record the store already has is kept as it is)
   POST   /_fake/delete/<csid>      soft-delete a Media record (the Media service still returns it)
   POST   /_fake/undelete/<csid>    undo a soft delete
@@ -63,14 +64,18 @@ def list_media(request: Request) -> list[dict[str, Any]]:
     """This museum's Media records: what a mock ETL needs to list the ones with files (F12)."""
     return [{"csid": m.csid, "identificationNumber": m.identification_number, "title": m.title,
              "blobCsid": m.blob or "", "state": m.state, "approvedForWeb": m.approved_for_web,
-             "publishTo": m.publish_to, "files": sorted(m.files), "updatedAt": m.updated_at}
+             "publishTo": m.publish_to, "files": sorted(m.files), "updatedAt": m.updated_at, "kind": m.kind,
+             "access": m.access}
             for m in store_of(request).media.values()]
 
 
 @router.post("/media")
 async def add_media(request: Request) -> JSONResponse:
     body: dict[str, Any] = await request.json()
-    s = store_of(request)
+    named = body.get("museum")
+    if named is not None and named not in stores:
+        raise HTTPException(400, f"unknown museum {named}: one of {', '.join(stores)}")
+    s = stores[named] if named else store_of(request)
     existing = s.media.get(body["csid"])
     if existing is not None:
         return JSONResponse({"csid": existing.csid, "files": sorted(existing.files), "kept": True})
@@ -79,7 +84,8 @@ async def add_media(request: Request) -> JSONResponse:
         raise HTTPException(400, f"unknown band {band}: one of {', '.join(bands.ORIGINALS)}")
     try:
         media = s.add(body["csid"], body.get("kind", "image"), body.get("state", "project"),
-                      blob=body.get("blob"), identification_number=body.get("identification"), band=band)
+                      blob=body.get("blob"), identification_number=body.get("identification"), band=band,
+                      access=body.get("access", "public"))
     except ValueError as error:
         raise HTTPException(400, str(error)) from error
     return JSONResponse({"csid": media.csid, "files": sorted(media.files)})

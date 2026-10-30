@@ -31,7 +31,7 @@ from fastapi.responses import Response, StreamingResponse
 from . import __version__, bands, hooks, vocab
 from .accounts import ADMINS, USERS, perms_for, roles_for
 from .context import museum_of, museum_of_scope, store, store_of, stores
-from .store import DERIVATIVES, TENANT_IDS, Media, Rule, Store, new_csid, now
+from .store import DERIVATIVES, TENANT_IDS, Media, Rule, Store, kind_of, new_csid, now
 
 __all__ = ["ADMINS", "USERS", "app", "museum_of", "store", "stores"]
 
@@ -369,6 +369,7 @@ async def attach_file(csid: str, request: Request, file: UploadFile) -> Response
     media.files = {name: (head, kind) for name in ("content", *DERIVATIVES)} if size <= KEEP_BYTES else {}
     media.blob = blob
     media.band = None
+    media.kind = kind_of(kind)
     media.updated_at = now()
     return _lost(s, "media_blob") or _created(request, "blobs", blob)
 

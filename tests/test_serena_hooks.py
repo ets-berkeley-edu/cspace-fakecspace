@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from fakecspace import bands
 from fakecspace.app import store
 
-from .conftest import SERENA
+from .conftest import SERENA, museum
 
 
 def test_a_record_with_sample_files(client: TestClient) -> None:
@@ -101,3 +101,28 @@ def test_calls_are_recorded_in_order(client: TestClient) -> None:
     client.get("/cspace-services/media/m-1/blob/content", auth=SERENA)
     assert client.get("/_fake/calls").json() == ["/cspace-services/media/m-1",
                                                  "/cspace-services/media/m-1/blob/content"]
+
+
+def test_kind_and_access_are_listed(client: TestClient) -> None:
+    """0.2.0: a servable list needs each record's kind and access (Serena's "Make one from the simulator")."""
+    client.post("/_fake/media", json={"csid": "m-1", "blob": "b-1", "kind": "pdf", "access": "restricted"})
+    client.post("/_fake/media", json={"csid": "m-2", "blob": "b-2", "kind": "card"})
+    listed = {m["csid"]: (m["kind"], m["access"]) for m in client.get("/_fake/media").json()}
+    assert listed == {"m-1": ("pdf", "restricted"), "m-2": ("card", "public")}
+    assert client.post("/_fake/media", json={"csid": "m-3", "access": "secret"}).status_code == 400
+
+
+def test_a_record_added_for_another_museum(client: TestClient) -> None:
+    """0.2.0: "museum" in the body names the store, whatever the host name (the fake ETL calls one address)."""
+    client.post("/_fake/media", json={"csid": "m-1", "museum": "cinefiles"})
+    assert [m["csid"] for m in museum("cinefiles").get("/_fake/media").json()] == ["m-1"]
+    assert client.get("/_fake/media").json() == []
+    assert client.post("/_fake/media", json={"csid": "m-2", "museum": "louvre"}).status_code == 400
+
+
+@pytest.mark.parametrize(("content_type", "kind"), [("image/jpeg", "image"), ("application/pdf", "pdf"),
+                                                    ("audio/mpeg", "audio"), ("video/mp4", "video"),
+                                                    ("model/gltf-binary", "3D"), ("application/octet-stream", "image")])
+def test_an_uploaded_files_kind(content_type: str, kind: str) -> None:
+    from fakecspace.store import kind_of
+    assert kind_of(content_type) == kind
