@@ -1,0 +1,6 @@
+# The tools that manage the dependencies: pip-compile (pip-tools) and pip-audit. Kept out of requirements-dev.txt,
+# so the package's tests don't install them.
+pip-tools
+pip-audit
+# click 8.5 makes pip-tools write a wrong "--no-index" into the requirements files' headers.
+click<8.5

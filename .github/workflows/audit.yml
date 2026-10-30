@@ -1,0 +1,19 @@
+name: Dependency audit
+on:
+  schedule:
+    - cron: "23 14 * * 1"   # Mondays 14:23 UTC: 7:23 AM PDT, 6:23 AM PST
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with: { python-version-file: .python-version }
+      - run: pip install --require-hashes -r requirements-tools.txt
+      - run: |
+          pip-audit --require-hashes --disable-pip -r requirements.txt -r requirements-dev.txt
+          pip-audit --require-hashes --disable-pip -r requirements-tools.txt
