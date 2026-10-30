@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `compose.shared.yml`: one simulator on the Docker network `fakecspace-shared` for both apps' shared mode (F6,
+  F7), at http://localhost:8480. No change to the package.
+
 ## 0.2.0
 
 What Serena's "Make one from the simulator" (Manual refresh) and its fake ETL need, from Serena's own simulator

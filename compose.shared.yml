@@ -1,0 +1,28 @@
+# Shared mode (local only): one simulator that Serena and the BMU both use, so a file the BMU uploads can come out of
+# Serena. Each app's shared option starts it (./serena up shared, ./bmu up shared) with
+#   docker compose -f compose.shared.yml -p fakecspace-shared up -d --build --wait
+# from a clone of this repository beside the app's (or FAKECSPACE_DIR), so whichever app comes first starts it and the
+# second finds it running. Stop it with:  docker compose -f compose.shared.yml -p fakecspace-shared down
+#
+# It runs the code of this clone's checkout, not the version the apps pin: check out the tag they pin (git checkout
+# v0.2.0) when that matters. It starts empty; each app seeds what it needs. It's never deployed to AWS (F17).
+name: fakecspace-shared
+
+services:
+  fakecspace:
+    build: .
+    # Published on 127.0.0.1 only (the accounts' passwords are public), on a port neither app's own simulator uses.
+    ports: ["127.0.0.1:${FAKECSPACE_SHARED_PORT:-8480}:8180"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8180/_fake/settings')"]
+      interval: 2s
+      retries: 30
+    networks:
+      shared:
+        # One host name per museum: each is its own CollectionSpace (one store per museum).
+        aliases: [bampfa.fakecspace, botgarden.fakecspace, cinefiles.fakecspace, pahma.fakecspace, ucjeps.fakecspace]
+
+networks:
+  shared:
+    # A fixed name, so each app's stack can join it as an external network.
+    name: fakecspace-shared
