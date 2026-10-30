@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+What Serena's "Make one from the simulator" (Manual refresh) and its fake ETL need, from Serena's own simulator
+(cspace-media-server PR #146) before it moves to this package.
+
+- A Media record has a `kind` (image, card, pdf, 3D, audio, video) and an `access` (public, restricted), as a servable
+  list gives them. `GET /_fake/media` lists both.
+- `POST /_fake/media` takes `"access"` (default public) and `"museum"`: the store to add the record to, whatever the
+  request's host name, so a client that calls one address can add records for each museum.
+- A file uploaded with `PUT media/<csid>/blob` sets the record's kind from its type (application/pdf: pdf; audio/*,
+  video/*, model/*: audio, video, 3D; anything else: image).
+
 ## 0.1.0
 
 The first release: the BMU's and Serena's simulators merged into one package.
