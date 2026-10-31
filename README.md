@@ -77,6 +77,19 @@ stores["pahma"].add("m-1")           # a Media record with sample files
 To run it: `uvicorn fakecspace.app:app --port 8180`, or
 `docker build -t fakecspace . && docker run --rm -p 8180:8180 fakecspace`.
 
+## Shared mode
+
+Each app normally runs its own simulator. To see a file the BMU uploads come out of Serena, both can use one:
+`./serena up shared` and `./bmu up shared` each start `compose.shared.yml` from a clone of this repository beside
+theirs (or `FAKECSPACE_DIR`), unless it is already running. It joins the Docker network `fakecspace-shared`, where each
+museum has its host name (`pahma.fakecspace:8180`), and is published at http://localhost:8680. It runs this clone's
+checkout, so check out the tag the apps pin when that matters. It is for local use only.
+
+```bash
+docker compose -f compose.shared.yml -p fakecspace-shared up -d --build --wait   # what the apps run
+docker compose -f compose.shared.yml -p fakecspace-shared down                   # stop it (both apps lose it)
+```
+
 ## Development
 
 Python 3.11 (`.python-version`).
