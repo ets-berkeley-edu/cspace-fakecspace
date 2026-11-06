@@ -150,7 +150,7 @@ def media_xml(s: Store, media: Media) -> str:
             + f"<blobCsid>{media.blob or ''}</blobCsid>"
             f"<publishToList><publishTo>{escape(publish_to)}</publishTo></publishToList></ns2:media_common>"
             f'<ns2:media_{s.museum} xmlns:ns2="http://collectionspace.org/services/media/local/{s.museum}">'
-            f"<approvedforweb>{str(media.approved_for_web).lower()}</approvedforweb></ns2:media_{s.museum}>"
+            f"<approvedForWeb>{str(media.approved_for_web).lower()}</approvedForWeb></ns2:media_{s.museum}>"
             + _core(media) + "</document>")
 
 

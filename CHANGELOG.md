@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
+- `GET media/<csid>` returns `media_<museum>`'s Approved for web as `approvedForWeb`, the element name CollectionSpace
+  uses (PAHMA's `media_pahma.xsd`), not `approvedforweb`, the database column's. A client that looked for the
+  lowercase name found it here and nothing in CollectionSpace.
 - `compose.shared.yml`: one simulator on the Docker network `fakecspace-shared` for both apps' shared mode (F6,
   F7), at http://localhost:8680. No change to the package.
 
