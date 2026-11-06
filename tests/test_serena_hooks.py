@@ -17,7 +17,7 @@ def test_a_record_with_sample_files(client: TestClient) -> None:
     assert client.get("/cspace-services/media/m-1/blob/content", auth=SERENA).content.startswith(b"\x89PNG")
     xml = client.get("/cspace-services/media/m-1", auth=SERENA).text
     assert "<blobCsid>b-1</blobCsid>" in xml and "<identificationNumber>2026.1.1</identificationNumber>" in xml
-    assert "<approvedforweb>true</approvedforweb>" in xml and "'All'</publishTo>" in xml
+    assert "<approvedForWeb>true</approvedForWeb>" in xml and "'All'</publishTo>" in xml
     assert client.post("/_fake/media", json={"csid": "m-1", "kind": "pdf"}).json()["kept"] is True
 
 
@@ -57,7 +57,7 @@ def test_replace_makes_a_new_blob_and_restore_undoes_it(client: TestClient) -> N
 def test_approval_and_removing_the_file(client: TestClient) -> None:
     client.post("/_fake/media", json={"csid": "m-1"})
     client.post("/_fake/approve/m-1", json={"approved": False})
-    assert "<approvedforweb>false</approvedforweb>" in client.get("/cspace-services/media/m-1", auth=SERENA).text
+    assert "<approvedForWeb>false</approvedForWeb>" in client.get("/cspace-services/media/m-1", auth=SERENA).text
     client.post("/_fake/remove-file/m-1")
     assert client.get("/cspace-services/media/m-1/blob/content", auth=SERENA).status_code == 404
 

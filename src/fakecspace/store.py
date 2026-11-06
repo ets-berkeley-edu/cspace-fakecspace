@@ -57,7 +57,7 @@ class Media:
     files: FileMap = field(default_factory=dict)
     blob: str | None = None  # its Blob's CSID (blobCsid)
     publish_to: str = "All"  # media_common's publishTo, a vocabulary term (core CollectionSpace)
-    approved_for_web: bool = True  # media_pahma's approvedforweb: what PAHMA's ETL reads
+    approved_for_web: bool = True  # media_pahma's approvedForWeb (column approvedforweb): what PAHMA's ETL reads
     identification_number: str = ""  # media_common's identificationNumber
     title: str = ""  # media_common's title (the BMU puts the file name there)
     xml: str | None = None  # the record as a client saved it (POST media); returned by GET, with blobCsid set
